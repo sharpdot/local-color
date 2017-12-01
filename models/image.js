@@ -15,6 +15,7 @@ const debug = require('debug')('localcolor')
 var Image = function(data) {
   this.id = 0
   this.url = ''
+  this.description = ''
   this.jsondata = JSON.stringify({})
   this.status = 1
   this.localpath = ''
@@ -42,6 +43,9 @@ Image.prototype.init = function(data) {
   }
   if (typeof data.localpath !== 'undefined'){
     this.localpath = data.localpath
+  }
+  if (typeof data.description !== 'undefined'){
+    this.description = data.description
   }
 }
 
@@ -97,6 +101,10 @@ Image.prototype.fetch = function(search, callback) {
 
 // update or insert
 Image.prototype.save = function(callback) {
+  debug('save the image object')
+  callback(null, 'OK')
+  return;
+
   var sql = '',
     params = [],
     now = moment().format('YYYY-MM-DD HH:mm:ss')
@@ -110,7 +118,7 @@ Image.prototype.save = function(callback) {
   debug('try to save now',sql,params)
   db.query( sql, params, function( err, rows ) {
     debug('got save result',err, rows)
-    callback(err)
+    callback(err, 'save result')
   });
 }
 

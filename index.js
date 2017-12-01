@@ -24,7 +24,7 @@ debug(chalk.blue(`starting ${name}`))
 var IMG_SAVE_DIR = path.join(process.cwd(), 'images-to-process')
 // make sure the save directory exists
 createFolder(IMG_SAVE_DIR)
-debug('folder there????',IMG_SAVE_DIR)
+//debug('folder there????',IMG_SAVE_DIR)
 
 // download and save the next image that has not been downloaded before!
 var img = new models.Image()
@@ -57,57 +57,58 @@ img.fetch({ localpath: null }, () => {
 
 
 
-app.get('/get-images', function (req, res) {
+app.get('/get-images/:term', function (req, res) {
   // get stuff
-  var output = 'get images'
-  debug(output)
-
-  var imageSearchObj = 'baby faces'
+  var imageSearchObj = 'pug puppies'
+  if (typeof req.params.term !== 'undefined'){
+    imageSearchObj = req.params.term
+  }
+  var output = '<h1>get images matching: ' + imageSearchObj + '</h1>'
+  debug('body....', req.params)
 
   const GoogleImages = require('google-images')
   const client = new GoogleImages(process.env.CSE_ID, process.env.CSE_API_KEY)
   // TODO: search is a parameter?
   client.search(imageSearchObj)
       .then(images => {
-          debug('got ' + images.length + ' images')
+          debug('<p>found ' + images.length + ' images</p>')
           output += ' got images ' + images.length
           // save and download
-          async.each(images, (image, next) => {
-            debug('handle image',image)
-            output += ' save and download an image ' + image.url
+          async.each(images, (imageJson, next) => {
+            debug('handle image',imageJson)
             // insert into db
             // TODO: first check to see if it is already there?
-            image.id = 0
-            //
-            var img = new models.Image(image)
-            img.save(function onDone(err, result){
-              debug('saved!',result)
-              // now download and save locally
-              // fix path to not include query string params...
-              var fileExt = img.url.substring(img.url.lastIndexOf('.') + 1)
-              if (fileExt.indexOf('?') > -1){
-                fileExt = fileExt.substring(0, fileExt.indexOf('?'))
-              }
-              var savePath = path.join(IMG_SAVE_DIR, img.id + '.' + fileExt)
-
-
-                debug('save path', savePath)
-              downloadFile((err) => {
-                debug('downloaded the file!', err)
-                // set the localpath and save - indicates that it was downloaded
-                img.localpath = savePath
-                img.save(function onDone(err, result){
-                  debug('updated!!!!!')
-                  next()
-                })
-              },img.url,savePath)
-            })
+            imageJson.id = 0
+            var imgObj = new models.Image(imageJson)
+            output += '<p>'+imgObj.description+'<br><img src="'+imgObj.url+'" /></p>'
+            // download and save locally
+            // fix path to not include query string params...
+            var fileExt = path.extname(imgObj.url)
+            var regex = /[#\\?]/g; // regex of illegal extension characters
+            var endOfExt = fileExt.search(regex);
+            if (endOfExt > -1) {
+                fileExt = fileExt.substring(0, endOfExt);
+            }
+            const uuidv1 = require('uuid/v1')
+            var fileName = uuidv1() + fileExt // fileExt includes the dot
+            var savePath = path.join(IMG_SAVE_DIR, fileName)
+            //debug('save path', savePath)
+            downloadFile((err) => {
+              debug('downloaded the file!', err)
+              // set the localpath and save - indicates that it was downloaded
+              imgObj.localpath = savePath
+              imgObj.save(function onDone(err, result){
+                //debug('updated!!!!!')
+                next()
+              })
+            },imgObj.url,savePath)
+            // end
           }, (err) => {
             if (err){
               debug('an error happened!',err)
               output += ' error! ' + err
             }
-            output += ' all done now '
+            output += '<h3>all done now</h3>'
             debug('everything finished')
             res.send(output)
           })
@@ -125,18 +126,6 @@ app.get('/get-images', function (req, res) {
 
       })
 
-
-      /* this worked too
-      var imageSearch = require('node-google-image-search');
-
-      var results = imageSearch('landscape', callback, 0, 5);
-
-      function callback(images) {
-        debug('got images finally', images)
-        output += ' got ' + images.length + ' images'
-        res.send(output)
-      }
-      */
 
 })
 

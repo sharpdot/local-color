@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.0",
+    "body-parser": "^1.18.2",
     "chalk": "^2.3.0",
     "debug": "^3.1.0",
     "dotenv": "^4.0.0",
@@ -22,6 +23,7 @@
     "node-google-image-search": "^1.0.3",
     "pug": "^2.0.0-rc.4",
     "request": "^2.83.0",
-    "sharp": "^0.18.4"
+    "sharp": "^0.18.4",
+    "uuid": "^3.1.0"
   }
 }
