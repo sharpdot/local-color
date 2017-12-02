@@ -105,23 +105,27 @@ Image.prototype.fetch = function(search, callback) {
 
 // update or insert
 Image.prototype.save = function(callback) {
-  debug('save the image object')
-  //callback(null, 'OK')
-  //return;
-
+  //debug('save the image object')
   var sql = '',
     params = [],
-    now = moment().format('YYYY-MM-DD HH:mm:ss')
-  if (this.id){
+    now = moment().format('YYYY-MM-DD HH:mm:ss'),
+    isUpdate = (this.id)
+  if (isUpdate){
     sql = "UPDATE lcol_images SET url = ?, status = ?, jsondata = ?, localpath = ?, updated = ? WHERE id = ?"
     params = [this.url, this.status, this.jsondata, this.localpath, now, this.id]
   } else {
     sql = "INSERT INTO lcol_images (`url`, `status`, `jsondata`, `localpath`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?)"
     params = [this.url, this.status, this.jsondata, this.localpath, now, now]
   }
-  debug('try to save now',sql,params)
+  //debug('try to save now',sql,params)
   db.query( sql, params, function( err, rows ) {
-    debug('got save result',err, rows)
+    //debug('got save result',err, rows)
+    if (!isUpdate){
+      this.id = rows.insertId
+    }
+    if (rows.affectedRows == 0){
+      // is this an error?
+    }
     callback(err, 'save result')
   });
 }

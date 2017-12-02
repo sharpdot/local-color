@@ -15,6 +15,7 @@ const app = express(),
   chalk = require('chalk'),
   async = require('async'),
   ColorThief = require('color-thief'),
+  _ = require('lodash'),
   path = require('path'),
   fs = require('fs'),
   models = require('./models/index'),
@@ -27,6 +28,7 @@ var IMG_SAVE_DIR = path.join(process.cwd(), 'images-to-process')
 createFolder(IMG_SAVE_DIR)
 //debug('folder there????',IMG_SAVE_DIR)
 
+/*
 // download and save the next image that has not been downloaded before!
 var img = new models.Image()
 img.fetch({ localpath: null }, () => {
@@ -52,7 +54,7 @@ img.fetch({ localpath: null }, () => {
 
   }
 })
-//
+*/
 
 // update
 
@@ -65,18 +67,17 @@ app.get('/get-images/:term', function (req, res) {
     imageSearchObj = req.params.term
   }
   var output = '<h1>get images matching: ' + imageSearchObj + '</h1>'
-  debug('body....', req.params)
+  //debug('body....', req.params)
 
   const GoogleImages = require('google-images')
   const client = new GoogleImages(process.env.CSE_ID, process.env.CSE_API_KEY)
   // TODO: search is a parameter?
   client.search(imageSearchObj)
       .then(images => {
-          debug('<p>found ' + images.length + ' images</p>')
-          output += ' got images ' + images.length
+          output += '<p>found ' + images.length + ' images</p>'
           // save and download
           async.each(images, (imageJson, next) => {
-            debug('handle image',imageJson)
+            //debug('handle image',imageJson)
             var imgOutput = ''
             // insert into db
             // TODO: first check to see if it is already there?
@@ -96,15 +97,15 @@ app.get('/get-images/:term', function (req, res) {
             var savePath = path.join(IMG_SAVE_DIR, fileName)
             //debug('save path', savePath)
             downloadFile((err) => {
-              debug('downloaded the file!', err, savePath)
-              debug('savePath', fileExt, fileName, savePath, imgObj.url)
+              debug('downloaded the file', fileExt, fileName, savePath, imgObj.url)
+              imgObj.localpath = savePath
 
               var colors = ''
               try {
                 // set the localpath and save - indicates that it was downloaded
                 var colorThief = new ColorThief()
                 var palette = colorThief.getPalette(savePath, 8)
-                debug('palette....',palette)
+                //debug('got the palette....',palette)
 
                 // save the palette data
                 var i, l = palette.length
@@ -116,18 +117,49 @@ app.get('/get-images/:term', function (req, res) {
               } catch (e) {
                 debug(chalk.red('exception! ' + e))
               }
-              imgObj.localpath = savePath
+
               // save the rbg also
               var newData = JSON.parse(imgObj.jsondata)
               newData.term = imageSearchObj
               newData.colors = palette
-              imgObj.jsondata = JSON.stringify(newData)
+              //
+              var ExifImage = require('exif').ExifImage;
 
-              imgObj.save(function onDone(err, result){
-                debug('saved!!!!!')
-                output += imgOutput
-                next()
-              })
+              try {
+                  new ExifImage({ image : savePath }, function (error, exifData) {
+                      if (error){
+                          console.log('Error: '+error.message);
+                      }
+                      if (typeof exifData !== 'undefined'){
+                        //debug(chalk.white('exif data'), exifData)
+                        if (!_.isEmpty(exifData.gps)){
+                            debug(chalk.white('exif GPS data!'), exifData.gps)
+                        }
+                    }
+                          newData.exif = exifData
+
+                          imgObj.jsondata = JSON.stringify(newData)
+
+                          imgObj.save(function onDone(err, result){
+                            debug('saved!!!!!')
+                            output += imgOutput
+                            next()
+                          })
+
+                  });
+              } catch (error) {
+                  console.log('Error: ' + error.message);
+                  imgObj.jsondata = JSON.stringify(newData)
+
+                  imgObj.save(function onDone(err, result){
+                    debug('saved!!!!!')
+                    output += imgOutput
+                    next()
+                  })
+
+              }
+
+
             },imgObj.url,savePath)
             // end
           }, (err) => {
