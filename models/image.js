@@ -27,6 +27,10 @@ var Image = function(data) {
 
 /*
  * init properties from a data object or sql row
+https://github.com/gomfunkel/node-exif
+https://stackoverflow.com/questions/36839168/extract-gps-data-from-exif-data-in-javascript
+ https://sno.phy.queensu.ca/~phil/exiftool/TagNames/GPS.html
+
  */
 Image.prototype.init = function(data) {
   if (typeof data.id !== 'undefined'){
@@ -102,8 +106,8 @@ Image.prototype.fetch = function(search, callback) {
 // update or insert
 Image.prototype.save = function(callback) {
   debug('save the image object')
-  callback(null, 'OK')
-  return;
+  //callback(null, 'OK')
+  //return;
 
   var sql = '',
     params = [],
@@ -113,7 +117,7 @@ Image.prototype.save = function(callback) {
     params = [this.url, this.status, this.jsondata, this.localpath, now, this.id]
   } else {
     sql = "INSERT INTO lcol_images (`url`, `status`, `jsondata`, `localpath`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?)"
-    params = [this.url, this.status, this.jsondata, NULL, now, now]
+    params = [this.url, this.status, this.jsondata, this.localpath, now, now]
   }
   debug('try to save now',sql,params)
   db.query( sql, params, function( err, rows ) {

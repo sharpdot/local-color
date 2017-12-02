@@ -10,6 +10,9 @@ https://github.com/lovell/sharp
 https://www.npmjs.com/package/jimp
 https://www.npmjs.com/package/localtunnel
 
+for https://www.npmjs.com/package/color-thief
+https://stackoverflow.com/questions/22100213/package-cairo-was-not-found-in-the-pkg-config-search-path-node-j-s-install-canv
+
 *google api*
 https://cse.google.com/cse/all
 https://console.developers.google.com

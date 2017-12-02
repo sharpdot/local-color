@@ -11,8 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.0",
-    "body-parser": "^1.18.2",
     "chalk": "^2.3.0",
+    "color-thief": "^2.2.2",
     "debug": "^3.1.0",
     "dotenv": "^4.0.0",
     "express": "^4.16.2",

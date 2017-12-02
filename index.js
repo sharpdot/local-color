@@ -14,6 +14,7 @@ const app = express(),
   debug = require('debug')('localcolor'),
   chalk = require('chalk'),
   async = require('async'),
+  ColorThief = require('color-thief'),
   path = require('path'),
   fs = require('fs'),
   models = require('./models/index'),
@@ -76,11 +77,12 @@ app.get('/get-images/:term', function (req, res) {
           // save and download
           async.each(images, (imageJson, next) => {
             debug('handle image',imageJson)
+            var imgOutput = ''
             // insert into db
             // TODO: first check to see if it is already there?
             imageJson.id = 0
             var imgObj = new models.Image(imageJson)
-            output += '<p>'+imgObj.description+'<br><img src="'+imgObj.url+'" /></p>'
+            imgOutput += '<p>'+imgObj.description+'<br><img src="'+imgObj.url+'" /></p>'
             // download and save locally
             // fix path to not include query string params...
             var fileExt = path.extname(imgObj.url)
@@ -94,11 +96,36 @@ app.get('/get-images/:term', function (req, res) {
             var savePath = path.join(IMG_SAVE_DIR, fileName)
             //debug('save path', savePath)
             downloadFile((err) => {
-              debug('downloaded the file!', err)
-              // set the localpath and save - indicates that it was downloaded
+              debug('downloaded the file!', err, savePath)
+              debug('savePath', fileExt, fileName, savePath, imgObj.url)
+
+              var colors = ''
+              try {
+                // set the localpath and save - indicates that it was downloaded
+                var colorThief = new ColorThief()
+                var palette = colorThief.getPalette(savePath, 8)
+                debug('palette....',palette)
+
+                // save the palette data
+                var i, l = palette.length
+                imgOutput += '<p>colors: '
+                for (i=0;i<l;i++){
+                  imgOutput += 'color ' + (i+1) + ' <span style="width:60px; height:60px; margin:0 5px; display:inline-block; background-color:rgba(' + palette[i].join(',') + ', 1);">' + palette[i].join('<br />') + '</span>'
+                }
+                imgOutput += '</p>'
+              } catch (e) {
+                debug(chalk.red('exception! ' + e))
+              }
               imgObj.localpath = savePath
+              // save the rbg also
+              var newData = JSON.parse(imgObj.jsondata)
+              newData.term = imageSearchObj
+              newData.colors = palette
+              imgObj.jsondata = JSON.stringify(newData)
+
               imgObj.save(function onDone(err, result){
-                //debug('updated!!!!!')
+                debug('saved!!!!!')
+                output += imgOutput
                 next()
               })
             },imgObj.url,savePath)
