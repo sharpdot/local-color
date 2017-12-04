@@ -12,6 +12,7 @@ require('dotenv').config()
 const express = require('express')
 const app = express(),
   debug = require('debug')('localcolor'),
+  hbs = require('express-hbs'),
   chalk = require('chalk'),
   async = require('async'),
   ColorThief = require('color-thief'),
@@ -23,10 +24,29 @@ const app = express(),
 
 debug(chalk.blue(`starting ${name}`))
 
-var IMG_SAVE_DIR = path.join(process.cwd(), 'images-to-process')
+const IMG_SAVE_DIR = path.join(process.cwd(), 'images-to-process')
 // make sure the save directory exists
 createFolder(IMG_SAVE_DIR)
-//debug('folder there????',IMG_SAVE_DIR)
+
+// config handlebars
+app.set('view engine', 'hbs')
+app.engine('hbs', hbs.express4({
+  defaultLayout: __dirname + '/views/layouts/main.hbs',
+  partialsDir: __dirname + '/views/partials',
+  layoutsDir: __dirname + '/views/layouts'
+}))
+app.set('views', path.join(__dirname,'/views'))
+
+app.get('/search', function(req, res) {
+  var user = {
+    first: 'Jeremy',
+    last: 'Dost',
+    site: 'http://jeremydost.com',
+    age: 32
+  }
+  res.render('search', user)
+})
+
 
 /*
 // download and save the next image that has not been downloaded before!
@@ -66,6 +86,8 @@ app.get('/get-images/:term', function (req, res) {
   if (typeof req.params.term !== 'undefined'){
     imageSearchObj = req.params.term
   }
+  var resultImages = []
+
   var output = '<h1>get images matching: ' + imageSearchObj + '</h1>'
   //debug('body....', req.params)
 
@@ -143,6 +165,7 @@ app.get('/get-images/:term', function (req, res) {
                           imgObj.save(function onDone(err, result){
                             debug('saved!!!!!')
                             output += imgOutput
+                            resultImages.push(imgObj)
                             next()
                           })
 
@@ -154,6 +177,7 @@ app.get('/get-images/:term', function (req, res) {
                   imgObj.save(function onDone(err, result){
                     debug('saved!!!!!')
                     output += imgOutput
+                    resultImages.push(imgObj)
                     next()
                   })
 
@@ -169,7 +193,17 @@ app.get('/get-images/:term', function (req, res) {
             }
             output += '<h3>all done now</h3>'
             debug('everything finished')
-            res.send(output)
+
+            var results = {
+              term: imageSearchObj,
+              images: resultImages,
+              first: 'Jeremy',
+              last: 'Dost',
+              site: 'http://jeremydost.com',
+              age: 32
+            }
+
+            res.render('results', results)
           })
           /*
           // update
@@ -224,9 +258,7 @@ function createFolder(dir){
 	}
 }
 
-
 app.use('/', express.static(path.join(__dirname, 'public')))
-
 app.listen(5000)
 
 var isSet = function(v,d){

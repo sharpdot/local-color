@@ -1,0 +1,40 @@
+{{!< main}}
+
+{{#contentFor head}}
+<style type="text/css">
+.header { navbar: #ff0; }
+</style>
+{{/contentFor}}
+
+
+<div class="jumbotron">
+  <div class="container">
+    <h1 class="display-3">Searched for {{term}}</h1>
+
+    <form class="searchForm" action="/get-images" method="get">
+      <div class="form-group">
+        <label for="searchTerm">Search Term</label>
+        <input type="text" class="form-control" id="searchTerm" aria-describedby="searchTermHelp" placeholder="pugs" value="{{term}}">
+        <small id="searchTermHelp" class="form-text text-muted">Whatever you're in the mood for.</small>
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+
+<h4>{{images.length}} results</h4>
+
+<div class="container">
+  <!-- Example row of columns -->
+  {{#each images}}
+  <div class="row">
+    <div class="col-md-4">
+      <img src="{{url}}" style="max-width: 100%" />
+    </div>
+    <div class="col-md-8">
+      <h4>{{description}}</h4>
+      <p>Colors: {{jsondata}}</p>
+    </div>
+  </div>
+  {{/each}}
+</div>
