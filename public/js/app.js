@@ -11,3 +11,16 @@ $('.searchForm').submit(function onSearchSubmit(evt){
   }
   alert('Please enter a search term')
 })
+
+$('.result-row .result-json-data').each(function(idx, item){
+  var $p = $(this),
+    json = $p.data('json'),
+    colors = json.colors
+  if (json.colors){
+    //console.log('json colors for this row...',colors)
+    var colorsHtml = json.colors.map(function(obj) {
+      return '<span class="color-box" style="background-color:rgba(' + obj.join(',') + ', 1);">' + obj.join('<br />') + '</span>'
+    })
+    $p.html(colorsHtml)
+  }
+})

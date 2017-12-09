@@ -27,13 +27,13 @@
 <div class="container">
   <!-- Example row of columns -->
   {{#each images}}
-  <div class="row">
+  <div class="row result-row">
     <div class="col-md-4">
       <img src="{{url}}" style="max-width: 100%" />
     </div>
     <div class="col-md-8">
       <h4>{{description}}</h4>
-      <p>Colors: {{jsondata}}</p>
+      <p class="result-json-data" data-json='{{jsondata}}'></p>
     </div>
   </div>
   {{/each}}

@@ -19,6 +19,7 @@ var Image = function(data) {
   this.jsondata = JSON.stringify({})
   this.status = 1
   this.localpath = ''
+  this.colors = []
   if (typeof data !== 'undefined'){
     this.init(data)
   }
@@ -50,6 +51,9 @@ Image.prototype.init = function(data) {
   }
   if (typeof data.description !== 'undefined'){
     this.description = data.description
+  }
+  if (typeof data.colors !== 'undefined'){
+    this.colors = data.colors
   }
 }
 

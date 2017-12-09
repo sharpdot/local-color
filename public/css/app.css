@@ -1,0 +1,7 @@
+.color-box {
+  text-align: center; width:60px; height:60px; margin:0 5px; display:inline-block;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 14px;
+  padding-top: 7px;
+}
