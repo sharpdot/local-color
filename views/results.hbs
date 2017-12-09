@@ -11,7 +11,7 @@
   <div class="container">
     <h1 class="display-3">Searched for {{term}}</h1>
 
-    <form class="searchForm" action="/get-images" method="get">
+    <form class="searchForm" action="/search" method="get">
       <div class="form-group">
         <label for="mainSearchTerm">Search Term</label>
         <input type="text" class="form-control" name="searchTerm" id="mainSearchTerm" aria-describedby="mainSearchTermHelp" placeholder="pugs" value="{{term}}">
@@ -22,7 +22,28 @@
   </div>
 </div>
 
-<h4>{{images.length}} results</h4>
+<div class="container">
+  <div class="row result-row">
+    <div class="col-md-4">
+      <h4>{{images.length}} results</h4>
+
+      <nav aria-label="...">
+        <ul class="pagination">
+          <li class="page-item {{#if prevPageUrl}}disabled{{/if}}">
+            <a class="page-link" href="{{prevPageUrl}}" tabindex="-1">Previous</a>
+          </li>
+          <li class="page-item active">
+            <a class="page-link" href="#">{{page}} <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="{{nextPageUrl}}">Next</a>
+          </li>
+        </ul>
+      </nav>
+
+    </div>
+  </div>
+</div>
 
 <div class="container">
   <!-- Example row of columns -->

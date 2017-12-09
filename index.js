@@ -44,72 +44,39 @@ var user = {
   age: 32
 }
 
-app.get('/search', function(req, res) {
-  res.render('search', user)
-})
-
 app.get('/', function(req, res) {
   res.render('index', user)
 })
-
-/*
-// download and save the next image that has not been downloaded before!
-var img = new models.Image()
-img.fetch({ localpath: null }, () => {
-  debug(chalk.yellow('returned!'))
-  if (img.id){
-    debug(chalk.yellow('loaded image!!!!'),img.id,img.url)
-
-    var fileExt = img.url.substring(img.url.lastIndexOf('.') + 1)
-    if (fileExt.indexOf('?') > -1){
-      fileExt = fileExt.substring(0, fileExt.indexOf('?'))
-    }
-    var savePath = path.join(IMG_SAVE_DIR, img.id + '.' + fileExt)
-      debug('save path', savePath)
-    downloadFile((err) => {
-      debug('downloaded the file!', err)
-      // set the localpath and save - indicates that it was downloaded
-      img.localpath = savePath
-      img.save(function onDone(err, result){
-        debug('updated!!!!!')
-      })
-    },img.url,savePath)
-
-
+// search
+app.get('/search/:term/:page*?', function(req, res) {
+  var term = req.params.term
+  var page = req.params.page
+  if (typeof page == 'undefined'){
+    page = 1
   }
-})
-*/
-
-// update
-
-
-
-app.get('/get-images/:term', function (req, res) {
-  // get stuff
-  var imageSearchObj = 'pug puppies'
-  if (typeof req.params.term !== 'undefined'){
-    imageSearchObj = req.params.term
+  // more option parameters here
+  // https://developers.google.com/custom-search/json-api/v1/reference/cse/list#parameters
+  var searchOptions = {
+    page: page,
+    imgType: "photo",
+    num: 3
   }
+
+  debug('search with optional params ', term, page)
   var resultImages = []
 
-  var output = '<h1>get images matching: ' + imageSearchObj + '</h1>'
   //debug('body....', req.params)
-
   const GoogleImages = require('google-images')
   const client = new GoogleImages(process.env.CSE_ID, process.env.CSE_API_KEY)
-  // TODO: search is a parameter?
-  client.search(imageSearchObj)
+  client.search(term, searchOptions)
       .then(images => {
-          output += '<p>found ' + images.length + ' images</p>'
           // save and download
           async.each(images, (imageJson, next) => {
             //debug('handle image',imageJson)
-            var imgOutput = ''
             // insert into db
             // TODO: first check to see if it is already there?
             imageJson.id = 0
             var imgObj = new models.Image(imageJson)
-            imgOutput += '<p>'+imgObj.description+'<br><img src="'+imgObj.url+'" /></p>'
             // download and save locally
             // fix path to not include query string params...
             var fileExt = path.extname(imgObj.url)
@@ -126,28 +93,20 @@ app.get('/get-images/:term', function (req, res) {
               debug('downloaded the file', fileExt, fileName, savePath, imgObj.url)
               imgObj.localpath = savePath
 
-              var colors = ''
+              //
+              var newData = JSON.parse(imgObj.jsondata)
+              newData.term = term
+              newData.page = page
+              newData.colors = []
               try {
                 // set the localpath and save - indicates that it was downloaded
                 var colorThief = new ColorThief()
-                var palette = colorThief.getPalette(savePath, 8)
+                newData.colors = colorThief.getPalette(savePath, 8)
                 //debug('got the palette....',palette)
-
-                // save the palette data
-                var i, l = palette.length
-                imgOutput += '<p>colors: '
-                for (i=0;i<l;i++){
-                  imgOutput += 'color ' + (i+1) + ' <span style="width:60px; height:60px; margin:0 5px; display:inline-block; background-color:rgba(' + palette[i].join(',') + ', 1);">' + palette[i].join('<br />') + '</span>'
-                }
-                imgOutput += '</p>'
               } catch (e) {
                 debug(chalk.red('exception! ' + e))
               }
 
-              // save the rbg also
-              var newData = JSON.parse(imgObj.jsondata)
-              newData.term = imageSearchObj
-              newData.colors = palette
               //
               var ExifImage = require('exif').ExifImage;
 
@@ -167,20 +126,18 @@ app.get('/get-images/:term', function (req, res) {
                           imgObj.jsondata = JSON.stringify(newData)
 
                           imgObj.save(function onDone(err, result){
-                            debug('saved!!!!!')
-                            output += imgOutput
+                            //debug('saved!!!!!')
                             resultImages.push(imgObj)
                             next()
                           })
 
                   });
               } catch (error) {
-                  console.log('Error: ' + error.message);
+                  debug('Error: ' + error.message);
                   imgObj.jsondata = JSON.stringify(newData)
 
                   imgObj.save(function onDone(err, result){
-                    debug('saved!!!!!')
-                    output += imgOutput
+                    //debug('saved!!!!!')
                     resultImages.push(imgObj)
                     next()
                   })
@@ -193,13 +150,14 @@ app.get('/get-images/:term', function (req, res) {
           }, (err) => {
             if (err){
               debug('an error happened!',err)
-              output += ' error! ' + err
             }
-            output += '<h3>all done now</h3>'
-            debug('everything finished')
+            //debug('everything finished')
 
             var results = {
-              term: imageSearchObj,
+              term: term,
+              page: page,
+              prevPageUrl: (page > 1) ? '/search/' + term + '/' + (page-1) : '',
+              nextPageUrl: '/search/' + term + '/' + (page+1),
               images: resultImages,
               first: 'Jeremy',
               last: 'Dost',
