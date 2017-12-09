@@ -37,16 +37,20 @@ app.engine('hbs', hbs.express4({
 }))
 app.set('views', path.join(__dirname,'/views'))
 
+var user = {
+  first: 'Jeremy',
+  last: 'Dost',
+  site: 'http://jeremydost.com',
+  age: 32
+}
+
 app.get('/search', function(req, res) {
-  var user = {
-    first: 'Jeremy',
-    last: 'Dost',
-    site: 'http://jeremydost.com',
-    age: 32
-  }
   res.render('search', user)
 })
 
+app.get('/', function(req, res) {
+  res.render('index', user)
+})
 
 /*
 // download and save the next image that has not been downloaded before!
