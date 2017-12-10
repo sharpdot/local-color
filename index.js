@@ -54,15 +54,14 @@ app.get('/search/:term/:page*?', function(req, res) {
   if (typeof page == 'undefined'){
     page = 1
   }
+  page = parseInt(page)
   // more option parameters here
   // https://developers.google.com/custom-search/json-api/v1/reference/cse/list#parameters
   var searchOptions = {
-    page: page,
-    imgType: "photo",
-    num: 3
+    page: page
   }
 
-  debug('search with optional params ', term, page)
+  debug(chalk.red('>>>>>>>>>>>>>>>>>>>>>>>>> search with optional params '), term, page)
   var resultImages = []
 
   //debug('body....', req.params)
