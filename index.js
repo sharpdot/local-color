@@ -47,6 +47,19 @@ var user = {
 app.get('/', function(req, res) {
   res.render('index', user)
 })
+// maps
+app.get('/map/:mapType*?', function(req, res) {
+  var mapType = req.params.mapType
+  if (typeof mapType == 'undefined'){
+    mapType = 'default'
+  }
+  //debug('which map is it??? ',req.params,mapType)
+  var data = user
+  data.map = {
+    type: mapType
+  }
+  res.render('map', data)
+})
 // search
 app.get('/search/:term/:page*?', function(req, res) {
   var term = req.params.term
