@@ -56,6 +56,7 @@ app.get('/map/:mapType*?', function(req, res) {
   //debug('which map is it??? ',req.params,mapType)
   var data = user
   data.map = {
+    key: process.env.GOOGLE_MAPS_KEY,
     type: mapType
   }
   res.render('map', data)
