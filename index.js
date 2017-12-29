@@ -54,12 +54,89 @@ app.get('/map/:mapType*?', function(req, res) {
     mapType = 'default'
   }
   //debug('which map is it??? ',req.params,mapType)
-  var data = user
-  data.map = {
-    key: process.env.GOOGLE_MAPS_KEY,
-    type: mapType
-  }
-  res.render('map', data)
+  // lookup locations
+  var googleMapsClient = require('@google/maps').createClient({
+    key: process.env.GOOGLE_MAPS_KEY
+  });
+  // Geocode a list of address. Some need it and others do not.
+  // load the addresses from the db
+  var maxAddressesToGeocodeAtOnce = 3,
+    addressesCombined = []
+
+  // add all that do not need geocoding to output array and queue up all that do need geocoding
+  getAddresses(function onAddressesLoad(loadErr, addresses){
+    var addressesToLookup = [],
+      i, l=addresses.length
+    for(i=0;i<l;i++){
+      if (isNaN(parseFloat(addresses[i].lat)) || isNaN(parseFloat(addresses[i].lng))){
+        // these need to be looked up
+        // there is a limit so only do a certain amount
+        // save the results back so we dont have to do it again later
+        if (addressesToLookup.length < maxAddressesToGeocodeAtOnce){
+          addressesToLookup.push(addresses[i])
+        } else {
+          debug(chalk.blue('TOO many to lookup - excluding this one!!!'),addresses[i])
+        }
+      } else {
+        // this one is good
+        addressesCombined.push(addresses[i])
+      }
+    }
+    //debug(chalk.red('lookup these addresses'),addressesToLookup)
+    // geocode any that need it
+    // finally, send the output to the renderer
+    async.each(addressesToLookup, (addressObj, next) => {
+        //debug('geocode this one',addressObj)
+        googleMapsClient.geocode({
+          address: addressObj.address
+        }, function(err, response) {
+          if (err) {
+            debug('Error with geocode call',err)
+          }
+          //debug('geocoding results', response)
+          if (response.json.status === 'OK'){
+            var results = response.json.results
+            //debug('raw results',results)
+            l=results.length
+            for(i=0;i<l;i++){
+              //debug('result ' + i,results[i])
+              //debug('location ',results[i].geometry.location)
+              addressesCombined.push({
+                title: addressObj.title,
+                lat: results[i].geometry.location.lat,
+                lng: results[i].geometry.location.lng,
+                address: results[i].formatted_address,
+                place_id: results[i].geometry.place_id,
+                description: addressObj.description
+              })
+            }
+            // TODO: save this data to the database too!
+            next()
+
+          } else {
+            // problem - details here: https://developers.google.com/maps/documentation/geocoding/intro#geocoding
+            debug('non OK response returned!',response.json.status)
+            next(new Error('Geocoding response was not OK ' + response.json.status))
+          }
+        })  // googleMapsClient.geocode
+
+
+    }, (err) => {
+      if (err){
+        debug('an error happened during geocoding!',err)
+      }
+      //debug('everything finished geocoding')
+      var data = user
+      data.map = {
+        key: process.env.GOOGLE_MAPS_KEY,
+        type: mapType,
+        locations: addressesCombined,
+        locations_stringified: JSON.stringify(addressesCombined)
+      }
+      res.render('map', data)
+    })
+
+  })  // onAddressesLoad
 })
 // search
 app.get('/search/:term/:page*?', function(req, res) {
@@ -253,4 +330,52 @@ var displayResults = function(which, where, source){
   where = isSet(where, 'all')
   source = isSet(source, 'all')
   return 'the images are not ready'
+}
+
+// simulating a call to a database
+// replace with a db call later on!
+function getAddresses(callback){
+  var addressesToLookup = [
+    {
+      address: '1600 Amphitheatre Parkway, Mountain View, CA',
+      lat: '37.4224082',
+      lng: '-122.0856086',
+      title: 'Google Building 41',
+      place_id: '',
+      description: 'Longer text goes here'
+    },
+    {
+      address: '959 Eden Ave SE, Atlanta, GA',
+      lat: '',
+      lng: '',
+      title: 'Home',
+      place_id: '',
+      description: 'Longer text goes here'
+    },
+    {
+      address: '14th St SW, Largo, FL 33770',
+      lat: '',
+      lng: '',
+      title: 'Florida home!',
+      place_id: '',
+      description: 'Wow, this is where I grew up!'
+    },
+    {
+      address: '11650 Alpharetta Highway, Roswell, GA',
+      lat: '',
+      lng: '',
+      title: 'The Roswell Office',
+      place_id: '',
+      description: 'Its the office'
+    },
+    {
+      address: 'Holiday Inn Express, 210 Seminole Blvd, Largo, FL 33770',
+      lat: '',
+      lng: '',
+      title: 'Holiday Inn in Largo',
+      place_id: '',
+      description: 'Longer text goes here'
+    }
+  ]
+  callback(null, addressesToLookup)
 }

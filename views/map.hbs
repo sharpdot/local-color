@@ -200,10 +200,43 @@ function initMap() {
     center: usa_center
   });
   // place markers
-  var marker = new google.maps.Marker({
-    position: usa_center,
-    map: map
-  });
+  // based on this and other examples: https://developers.google.com/maps/documentation/javascript/examples/infowindow-simple-max
+  // we may need to do it with a timeout as well
+  // https://developers.google.com/maps/documentation/javascript/examples/marker-animations-iteration
+  var curInfoWindow
+  function addMarker(map, title, description, lat, lng, formatted_address){
+    var marker, infoWindow, contentString
+    marker = new google.maps.Marker({
+      position: new google.maps.LatLng(lat, lng),
+      map: map
+    })
+    contentString = '<div id="content">'+
+        '<div id="siteNotice">'+
+        '</div>'+
+        '<h4 class="firstHeadingx">'+title+'</h4>'+
+        '<div id="bodyContent">'+
+        '<p><em>'+formatted_address+'</em></p>'+
+        '<p>'+description+'</p>'+
+        '</div>'+
+        '</div>';
+    infoWindow = new google.maps.InfoWindow({
+      content: contentString,
+      maxWidth: 500
+    })
+    marker.addListener('click', function() {
+      // close all windows?
+      if (curInfoWindow){
+        curInfoWindow.close()
+      }
+      infoWindow.open(map, marker)
+      curInfoWindow = infoWindow
+    });
+    return marker
+  }
+  var marker, infoWindow, contentString, allMarkers = []
+  {{#each map.locations}}
+  addMarker(map, '{{title}}', '{{description}}', {{lat}}, {{lng}}, '{{address}}')
+  {{/each}}
 }
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key={{map.key}}&callback=initMap">
